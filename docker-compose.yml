@@ -1,0 +1,47 @@
+version: "3.6"
+x-base: &BASE
+  env_file: .env
+  restart: "unless-stopped"
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10k"
+      max-file: "30"
+services:
+  postgres:
+    <<: *BASE
+    image: postgres:12.1
+    environment:
+      - POSTGRES_USER=${DB_USER}  
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DATABASE_HOST=${DB_HOST}
+    ports:
+      - ${PORT_DB}:5432
+    volumes:
+      - database_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+  go:
+    <<: *BASE
+    build:
+      context: .
+      # https://docs.docker.com/compose/compose-file/ search ARGS
+      args:
+        GOLANG_VERSION: ${GOLANG_VERSION}
+      dockerfile: $PWD/dockerfiles/go.Dockerfile
+    ports:
+      - ${PORT_GO}:8080
+    user: "1000:1000"
+    volumes:
+      - .:/app
+      - ./.cache:/.cache
+    depends_on:
+      - postgres
+
+volumes:
+  api:
+  database_postgres:                  # Uncomment this when using postgres.

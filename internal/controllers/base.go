@@ -1,12 +1,18 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"time"
 
 	"github.com/Raybird/whale/internal/models"
 	"github.com/gin-gonic/gin"
+	ginprometheus "github.com/zsais/go-gin-prometheus"
+
 	"github.com/jinzhu/gorm"
 
 	_ "github.com/jinzhu/gorm/dialects/mysql"    //mysql database driver
@@ -34,7 +40,9 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 		}
 	}
 	if Dbdriver == "postgres" {
-		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s", DbHost, DbPort, DbUser, DbName, DbPassword)
+		DBURL := fmt.Sprintf("host=%s port=%s user=%s dbname=%s sslmode=disable password=%s",
+			DbHost, DbPort, DbUser, DbName, DbPassword)
+		log.Println(DBURL)
 		server.DB, err = gorm.Open(Dbdriver, DBURL)
 		if err != nil {
 			fmt.Printf("Cannot connect to %s database", Dbdriver)
@@ -46,10 +54,45 @@ func (server *Server) Initialize(Dbdriver, DbUser, DbPassword, DbPort, DbHost, D
 
 	server.DB.Debug().AutoMigrate(&models.User{}) //database migration
 
-	server.Router = gin.Default()
+	r := gin.Default()
+	r.MaxMultipartMemory = 8 << 20 // 8 MiB
+	// prometheus
+	p := ginprometheus.NewPrometheus("gin")
+	p.Use(r)
+
+	server.Router = r
+
 }
 
+// Run ...
 func (server *Server) Run(addr string) {
-	fmt.Println("Listening to port 8080")
-	log.Fatal(http.ListenAndServe(addr, server.Router))
+
+	srv := &http.Server{
+		Addr:    addr, // listen and serve on 0.0.0.0:8080
+		Handler: server.Router,
+	}
+
+	fmt.Println("Listening to port: " + addr)
+	go func() {
+		// service connections
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("listen: %s\n", err)
+		}
+		fmt.Println("Listening to port 8080")
+	}()
+
+	// Wait for interrupt signal to gracefully shutdown the server with
+	// a timeout of 5 seconds.
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, os.Kill)
+	s := <-quit
+	log.Printf("Shutdown Server: %s ...", s)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server Shutdown:", err)
+	}
+	log.Println("Server exiting")
+
 }
