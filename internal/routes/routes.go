@@ -3,27 +3,27 @@ package routes
 import (
 	"net/http"
 
-	"github.com/Raybird/whale/internal/controllers"
-	"github.com/Raybird/whale/internal/controllers/home"
-	"github.com/Raybird/whale/internal/controllers/login"
-	"github.com/Raybird/whale/internal/controllers/users"
+	"github.com/Raybird/whale/internal/modules"
+	"github.com/Raybird/whale/internal/modules/home"
+	"github.com/Raybird/whale/internal/modules/login"
+	"github.com/Raybird/whale/internal/modules/users"
 	"github.com/gin-gonic/gin"
 )
 
 // InitializeRoutes ...
-func InitializeRoutes(s *controllers.Server) {
+func InitializeRoutes(base *modules.BaseCtrl) {
 
-	s.Router.GET("/healthz", Heartbeat)
+	base.Router.GET("/healthz", Heartbeat)
 
-	homeCtl := home.Ctl{Server: s}
-	s.Router.GET("/", homeCtl.Home)
+	homeCtl := home.Ctrl{Base: base}
+	base.Router.GET("/", homeCtl.Home)
 
-	loginCtl := login.Ctl{Server: s}
-	s.Router.POST("/login", loginCtl.Login)
+	loginCtl := login.Ctrl{Base: base}
+	base.Router.POST("/login", loginCtl.Login)
 
-	userCtl := users.Ctl{Server: s}
-	s.Router.POST("/users", userCtl.CreateUser)
-	s.Router.GET("/users", userCtl.GetUsers)
+	userCtl := users.Ctrl{Base: base}
+	base.Router.POST("/users", userCtl.CreateUser)
+	base.Router.GET("/users", userCtl.GetUsers)
 }
 
 // Heartbeat ...

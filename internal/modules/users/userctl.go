@@ -3,20 +3,20 @@ package users
 import (
 	"net/http"
 
-	"github.com/Raybird/whale/internal/controllers"
 	"github.com/Raybird/whale/internal/models"
+	"github.com/Raybird/whale/internal/modules"
 	"github.com/Raybird/whale/internal/responses"
 	"github.com/Raybird/whale/internal/utils/formaterror"
 	"github.com/gin-gonic/gin"
 )
 
-// Ctl ...
-type Ctl struct {
-	Server *controllers.Server
+// Ctrl ...
+type Ctrl struct {
+	Base *modules.BaseCtrl
 }
 
 // CreateUser ...
-func (ctl *Ctl) CreateUser(c *gin.Context) {
+func (ctl *Ctrl) CreateUser(c *gin.Context) {
 	user := models.User{}
 	err := c.BindJSON(&user)
 	if err != nil {
@@ -30,7 +30,7 @@ func (ctl *Ctl) CreateUser(c *gin.Context) {
 		responses.ERROR(c.Writer, http.StatusUnprocessableEntity, err)
 		return
 	}
-	userCreated, err := user.SaveUser(ctl.Server.DB)
+	userCreated, err := user.SaveUser(ctl.Base.DB)
 
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
@@ -42,10 +42,10 @@ func (ctl *Ctl) CreateUser(c *gin.Context) {
 }
 
 // GetUsers ...
-func (ctl *Ctl) GetUsers(c *gin.Context) {
+func (ctl *Ctrl) GetUsers(c *gin.Context) {
 	user := models.User{}
 
-	users, err := user.FindAllUsers(ctl.Server.DB)
+	users, err := user.FindAllUsers(ctl.Base.DB)
 	if err != nil {
 		responses.ERROR(c.Writer, http.StatusInternalServerError, err)
 		return

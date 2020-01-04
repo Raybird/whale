@@ -4,21 +4,21 @@ import (
 	"net/http"
 
 	"github.com/Raybird/whale/internal/auth"
-	"github.com/Raybird/whale/internal/controllers"
 	"github.com/Raybird/whale/internal/models"
+	"github.com/Raybird/whale/internal/modules"
 	"github.com/Raybird/whale/internal/responses"
 	"github.com/Raybird/whale/internal/utils/formaterror"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// Ctl ...
-type Ctl struct {
-	Server *controllers.Server
+// Ctrl ...
+type Ctrl struct {
+	Base *modules.BaseCtrl
 }
 
 // Login ...
-func (ctl *Ctl) Login(c *gin.Context) {
+func (ctl *Ctrl) Login(c *gin.Context) {
 
 	var user models.User
 
@@ -44,13 +44,13 @@ func (ctl *Ctl) Login(c *gin.Context) {
 }
 
 // SignIn ...
-func (ctl *Ctl) SignIn(email, password string) (string, error) {
+func (ctl *Ctrl) SignIn(email, password string) (string, error) {
 
 	var err error
 
 	user := models.User{}
 
-	err = ctl.Server.DB.Debug().Model(models.User{}).Where("email = ?", email).Take(&user).Error
+	err = ctl.Base.DB.Debug().Model(models.User{}).Where("email = ?", email).Take(&user).Error
 	if err != nil {
 		return "", err
 	}

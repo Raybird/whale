@@ -3,17 +3,17 @@ package home
 import (
 	"net/http"
 
-	"github.com/Raybird/whale/internal/controllers"
+	"github.com/Raybird/whale/internal/modules"
 	"github.com/gin-gonic/gin"
 )
 
 // Ctl ...
-type Ctl struct {
-	Server *controllers.Server
+type Ctrl struct {
+	Base *modules.BaseCtrl
 }
 
 // Home ...
-func (ctl *Ctl) Home(c *gin.Context) {
+func (ctl *Ctrl) Home(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Welcome To This Awesome API",
 	})
